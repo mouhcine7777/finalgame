@@ -28,6 +28,25 @@ const styles = {
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     zIndex: 1,
   },
+  startScreen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 5,
+  },
+  startButton: {
+    width: '200px', // Reduced size
+    cursor: 'pointer',
+    transition: 'transform 0.2s ease',
+    '&:hover': {
+      transform: 'scale(1.1)',
+    },
+  },
   gameContent: {
     position: 'relative',
     width: '100%',
@@ -120,7 +139,7 @@ const Game = () => {
   const [score, setScore] = useState(0);
   const [items, setItems] = useState([]);
   const [gameOver, setGameOver] = useState(false);
-  const [gameStarted] = useState(true);
+  const [gameStarted, setGameStarted] = useState(false);
   const [speed, setSpeed] = useState(4);
   const [spawnRate, setSpawnRate] = useState(600);
   const [logoSpawned, setLogoSpawned] = useState(false);
@@ -128,6 +147,17 @@ const Game = () => {
   const [scorePosition, setScorePosition] = useState(25);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState(0);
+
+  const startGame = () => {
+    setGameStarted(true);
+    setScore(0);
+    setTimeLeft(30);
+    setGameOver(false);
+    setLogoSpawned(false);
+    setItems([]);
+    setSpeed(4);
+    setSpawnRate(600);
+  };
 
   const handleDragMove = useCallback((e) => {
     if (!isDragging) return;
@@ -175,12 +205,10 @@ const Game = () => {
     const patterns = ['straight', 'zigzag', 'sine', 'bounce'];
     const movePattern = patterns[Math.floor(Math.random() * patterns.length)];
     
-    // If type is not specified, randomly choose between good and bomb
     if (!type) {
       type = Math.random() > 0.35 ? 'good' : 'bomb';
     }
 
-    // For logo, always spawn in center
     const left = type === 'logo' ? 50 : (Math.random() * 80 + 10);
     const itemSpeedMultiplier = type === 'logo' ? 1.4 : 
                                type === 'good' ? 1.1 : 1.2;
@@ -199,13 +227,12 @@ const Game = () => {
     };
   }, []);
 
-  // Handle logo spawn at 15 seconds
   useEffect(() => {
-    if (timeLeft === 15 && !logoSpawned && !gameOver) {
+    if (timeLeft === 15 && !logoSpawned && gameStarted && !gameOver) {
       setItems(prev => [...prev, createItem('logo')]);
       setLogoSpawned(true);
     }
-  }, [timeLeft, logoSpawned, gameOver, createItem]);
+  }, [timeLeft, logoSpawned, gameStarted, gameOver, createItem]);
 
   useEffect(() => {
     if (!gameStarted || gameOver) return;
@@ -337,24 +364,44 @@ const Game = () => {
 
       <div style={styles.overlay} />
       
-      <div style={styles.gameContent}>
-        {items.map(item => (
-          <div
-            key={item.id}
+      {!gameStarted && !gameOver && (
+        <div style={styles.startScreen}>
+          <img 
+            src="./start.png" 
+            alt="Start Game" 
             style={{
-              ...styles.item,
-              left: item.left,
-              top: item.top,
-              opacity: item.clicked ? 0 : 1,
-              transition: 'opacity 0.2s',
+              ...styles.startButton,
+              cursor: 'pointer',
+              transform: 'scale(1)',
+              transition: 'transform 0.2s ease',
             }}
-            onMouseDown={(e) => handleItemClick(item, e)}
-            onTouchStart={(e) => handleItemClick(item, e)}
-          >
-            {renderItemContent(item.type)}
-          </div>
-        ))}
-      </div>
+            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            onClick={startGame}
+          />
+        </div>
+      )}
+      
+      {gameStarted && (
+        <div style={styles.gameContent}>
+          {items.map(item => (
+            <div
+              key={item.id}
+              style={{
+                ...styles.item,
+                left: item.left,
+                top: item.top,
+                opacity: item.clicked ? 0 : 1,
+                transition: 'opacity 0.2s',
+              }}
+              onMouseDown={(e) => handleItemClick(item, e)}
+              onTouchStart={(e) => handleItemClick(item, e)}
+            >
+              {renderItemContent(item.type)}
+            </div>
+          ))}
+        </div>
+      )}
 
       <img 
         src="./claque2.png" 
@@ -363,7 +410,7 @@ const Game = () => {
       />
 
       <div style={styles.scoreContainer}>
-        {!gameOver && (
+        {gameStarted && !gameOver && (
           <>
             <div 
               style={{
@@ -381,7 +428,7 @@ const Game = () => {
         )}
 
         {gameOver && (
-          <div style={styles.gameOver}>
+          <div style={styles.gameOver} onClick={startGame}>
             {score}
           </div>
         )}
