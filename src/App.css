@@ -1,0 +1,92 @@
+/* Game area setup */
+.game-area {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #f0f8ff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Final score display */
+.final-score {
+  text-align: center;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.final-score h1 {
+  font-size: 3rem;
+  color: #333;
+}
+
+.final-score h2 {
+  font-size: 2rem;
+  color: #007bff;
+}
+
+/* Game items */
+.game-item {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  top: -50px;
+  animation: fall linear;
+  cursor: pointer;
+  background-size: cover;
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+.game-item.good {
+  background-image: url('./item.png');
+}
+
+.game-item.bomb {
+  background-image: url('./bomb.png');
+}
+
+/* Animation for falling items */
+@keyframes fall {
+  from {
+    top: -50px;
+  }
+  to {
+    top: 100vh;
+  }
+}
+
+/* Pop effect */
+.game-item.pop {
+  transform: scale(1.5); /* Scale up */
+  opacity: 0; /* Fade out */
+  animation: none; /* Stop falling */
+}
+
+/* Score effect */
+.score-effect {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.score-effect.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-30px);
+}
+
+.score-effect.good {
+  color: green;
+}
+
+.score-effect.bomb {
+  color: red;
+}
