@@ -28,6 +28,18 @@ const styles = {
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     zIndex: 1,
   },
+  flashOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(255, 0, 0, 0.3)',
+    opacity: 0,
+    transition: 'opacity 0.15s ease-out',
+    pointerEvents: 'none',
+    zIndex: 10,
+  },
   startScreen: {
     position: 'absolute',
     top: 0,
@@ -35,17 +47,31 @@ const styles = {
     width: '100%',
     height: '100%',
     display: 'flex',
+    flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 5,
+    gap: '2rem', // Add spacing between elements
+  },
+  explainerImage: {
+    width: '60%',
+    maxWidth: '600px',
+    height: 'auto',
+    marginBottom: '1rem',
   },
   startButton: {
-    width: '200px', // Reduced size
+    width: '200px',
     cursor: 'pointer',
-    transition: 'transform 0.2s ease',
+    transition: 'all 0.2s ease',
+    transform: 'translateY(0)',
     '&:hover': {
       transform: 'scale(1.1)',
     },
+  },
+  startButtonClicked: {
+    transform: 'translateY(20px)',
+    opacity: 0,
+    transition: 'all 0.3s ease',
   },
   gameContent: {
     position: 'relative',
@@ -77,8 +103,8 @@ const styles = {
     position: 'absolute',
     left: '50%',
     transform: 'translateX(-50%)',
-    color: 'white',
-    fontSize: '3rem',
+    color: '#442869',
+    fontSize: '2.4rem',
     fontWeight: '900',
     textAlign: 'center',
     textShadow: '0 0 20px rgba(255,255,255,0.5)',
@@ -90,12 +116,12 @@ const styles = {
     position: 'absolute',
     left: '50%',
     transform: 'translateX(-50%)',
-    color: 'white',
+    color: '#442869',
     fontSize: '4rem',
     fontWeight: '900',
     textAlign: 'center',
     textShadow: '0 0 20px rgba(255,255,255,0.5)',
-    top: '620px',
+    top: '685px',
     pointerEvents: 'none',
     userSelect: 'none',
   },
@@ -110,11 +136,25 @@ const styles = {
     height: '100px',
     transform: 'translate(-50%, -50%)',
     padding: '10px',
+    WebkitTouchCallout: 'none',
+    WebkitUserSelect: 'none',
+    KhtmlUserSelect: 'none',
+    MozUserSelect: 'none',
+    msUserSelect: 'none',
+    userSelect: 'none',
+    WebkitTapHighlightColor: 'transparent',
   },
   itemImage: {
     width: '60px',
     height: '60px',
     objectFit: 'contain',
+    WebkitTouchCallout: 'none', // Prevents touch callout on iOS
+    WebkitUserSelect: 'none',   // Prevents selection on Safari
+    KhtmlUserSelect: 'none',    // Prevents selection on old browsers
+    MozUserSelect: 'none',      // Prevents selection on Firefox
+    msUserSelect: 'none',       // Prevents selection on IE/Edge
+    userSelect: 'none',         // Prevents selection on modern browsers
+    WebkitTapHighlightColor: 'transparent', // Removes tap highlight on mobile
   },
   logo: {
     width: '60px',
@@ -135,29 +175,43 @@ const styles = {
   }
 };
 
+const DIFFICULTY_SETTINGS = {
+  easy: { speed: 3.5, spawnRate: 700, bombChance: 0.2 }, // Increased speed from 2 to 3.5, reduced spawnRate from 800 to 700
+  medium: { speed: 4, spawnRate: 600, bombChance: 0.35 },
+  hard: { speed: 6, spawnRate: 400, bombChance: 0.5 },
+  extreme: { speed: 8, spawnRate: 300, bombChance: 0.65 }
+};
+
+const PATTERNS = ['straight', 'zigzag', 'sine', 'bounce'];
+
 const Game = () => {
   const [score, setScore] = useState(0);
   const [items, setItems] = useState([]);
   const [gameOver, setGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
-  const [speed, setSpeed] = useState(4);
-  const [spawnRate, setSpawnRate] = useState(600);
+  const [speed, setSpeed] = useState(2);
+  const [spawnRate, setSpawnRate] = useState(800);
   const [logoSpawned, setLogoSpawned] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [scorePosition, setScorePosition] = useState(25);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [scorePosition, setScorePosition] = useState(47);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState(0);
+  const [isFlashing, setIsFlashing] = useState(false);
+  const [currentPhase, setCurrentPhase] = useState('easy');
+  const [allowHorizontalMovement, setAllowHorizontalMovement] = useState(false);
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     setGameStarted(true);
     setScore(0);
-    setTimeLeft(30);
+    setTimeLeft(60);
     setGameOver(false);
-    setLogoSpawned(false);
+    setLogoSpawned(false);    
     setItems([]);
-    setSpeed(4);
-    setSpawnRate(600);
-  };
+    setSpeed(DIFFICULTY_SETTINGS.easy.speed);
+    setSpawnRate(DIFFICULTY_SETTINGS.easy.spawnRate);
+    setCurrentPhase('easy');
+    setAllowHorizontalMovement(false);
+  }, []);
 
   const handleDragMove = useCallback((e) => {
     if (!isDragging) return;
@@ -183,6 +237,31 @@ const Game = () => {
     e.preventDefault();
   }, []);
 
+  const handleItemClick = useCallback((clickedItem, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (clickedItem.clicked || gameOver) return;
+
+    setItems(prev => 
+      prev.map(item => 
+        item.id === clickedItem.id 
+          ? { ...item, clicked: true }
+          : item
+      )
+    );
+
+    if (clickedItem.type === 'logo') {
+      setScore(prev => prev + 150);
+    } else if (clickedItem.type === 'good') {
+      setScore(prev => prev + 10);
+    } else {
+      setScore(prev => Math.max(0, prev - 10));
+      setIsFlashing(true);
+      setTimeout(() => setIsFlashing(false), 150);
+    }
+  }, [gameOver]);
+
   useEffect(() => {
     if (isDragging) {
       window.addEventListener('mousemove', handleDragMove);
@@ -199,14 +278,21 @@ const Game = () => {
     };
   }, [isDragging, handleDragMove, handleDragEnd]);
 
+  useEffect(() => {
+    if (!gameStarted || gameOver) return;
+
+    if (timeLeft <= 40) {
+      setAllowHorizontalMovement(true);
+    }
+  }, [timeLeft, gameStarted, gameOver]);
+
   const createItem = useCallback((type = null) => {
     const id = Math.random().toString(36);
-    
-    const patterns = ['straight', 'zigzag', 'sine', 'bounce'];
-    const movePattern = patterns[Math.floor(Math.random() * patterns.length)];
+    const movePattern = PATTERNS[Math.floor(Math.random() * PATTERNS.length)];
     
     if (!type) {
-      type = Math.random() > 0.35 ? 'good' : 'bomb';
+      const bombChance = DIFFICULTY_SETTINGS[currentPhase].bombChance;
+      type = Math.random() > bombChance ? 'good' : 'bomb';
     }
 
     const left = type === 'logo' ? 50 : (Math.random() * 80 + 10);
@@ -223,12 +309,32 @@ const Game = () => {
       direction: Math.random() > 0.5 ? 1 : -1,
       originalLeft: left,
       speed: itemSpeedMultiplier,
-      phase: Math.random() * Math.PI * 2
+      phase: Math.random() * Math.PI * 2,
+      createdAfterMovement: timeLeft <= 40
     };
-  }, []);
+  }, [currentPhase, timeLeft]);
+
+  // Update game phase and settings
+  useEffect(() => {
+    if (!gameStarted || gameOver) return;
+
+    const updateSettings = (phase) => {
+      setCurrentPhase(phase);
+      setSpeed(DIFFICULTY_SETTINGS[phase].speed);
+      setSpawnRate(DIFFICULTY_SETTINGS[phase].spawnRate);
+    };
+
+    if (timeLeft <= 10) {
+      updateSettings('extreme');
+    } else if (timeLeft <= 30) {
+      updateSettings('hard');
+    } else if (timeLeft <= 50) {
+      updateSettings('medium');
+    }
+  }, [timeLeft, gameStarted, gameOver]);
 
   useEffect(() => {
-    if (timeLeft === 15 && !logoSpawned && gameStarted && !gameOver) {
+    if (timeLeft === 30 && !logoSpawned && gameStarted && !gameOver) {
       setItems(prev => [...prev, createItem('logo')]);
       setLogoSpawned(true);
     }
@@ -254,23 +360,12 @@ const Game = () => {
   useEffect(() => {
     if (!gameStarted || gameOver) return;
 
-    const difficultyInterval = setInterval(() => {
-      setSpeed(prev => {
-        const speedIncrease = prev > 7 ? 0.3 : 0.5;
-        return Math.min(prev + speedIncrease, 8.5);
-      });
-      setSpawnRate(prev => Math.max(prev - 75, 400));
-    }, 3000);
-
-    return () => clearInterval(difficultyInterval);
-  }, [gameStarted, gameOver]);
-
-  useEffect(() => {
-    if (!gameStarted || gameOver) return;
-
     const itemInterval = setInterval(() => {
       const rand = Math.random();
-      const itemCount = rand > 0.6 ? 3 : rand > 0.3 ? 2 : 1;
+      const itemCount = currentPhase === 'extreme' ? 
+        (rand > 0.5 ? 3 : 2) : 
+        (rand > 0.6 ? 3 : rand > 0.3 ? 2 : 1);
+      
       setItems(prev => [...prev, ...Array(itemCount).fill(null).map(() => createItem())]);
     }, spawnRate);
 
@@ -278,10 +373,10 @@ const Game = () => {
       setItems(prev => {
         const newItems = prev
           .map(item => {
-            let newLeft = parseFloat(item.left);
+            let newLeft = parseFloat(item.originalLeft);
             const time = Date.now() / 1000;
 
-            if (item.type !== 'logo') {
+            if (allowHorizontalMovement && item.type !== 'logo' && item.createdAfterMovement) {
               switch(item.movePattern) {
                 case 'zigzag':
                   newLeft = item.originalLeft + Math.sin(item.top / 30) * 25;
@@ -314,32 +409,9 @@ const Game = () => {
       clearInterval(itemInterval);
       clearInterval(moveInterval);
     };
-  }, [gameStarted, gameOver, createItem, speed, spawnRate]);
+  }, [gameStarted, gameOver, createItem, speed, spawnRate, currentPhase, allowHorizontalMovement]);
 
-  const handleItemClick = (clickedItem, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (clickedItem.clicked || gameOver) return;
-
-    setItems(prev => 
-      prev.map(item => 
-        item.id === clickedItem.id 
-          ? { ...item, clicked: true }
-          : item
-      )
-    );
-
-    if (clickedItem.type === 'logo') {
-      setScore(prev => prev + 150);
-    } else if (clickedItem.type === 'good') {
-      setScore(prev => prev + 10);
-    } else {
-      setScore(prev => Math.max(0, prev - 10));
-    }
-  };
-
-  const renderItemContent = (type) => {
+  const renderItemContent = useCallback((type) => {
     switch(type) {
       case 'logo':
         return <img src="./logo.png" alt="logo" style={styles.logo} />;
@@ -348,7 +420,7 @@ const Game = () => {
       default:
         return '💣';
     }
-  };
+  }, []);
 
   return (
     <div style={styles.gameContainer}>
@@ -364,8 +436,20 @@ const Game = () => {
 
       <div style={styles.overlay} />
       
+      <div
+        style={{
+          ...styles.flashOverlay,
+          opacity: isFlashing ? 1 : 0,
+        }}
+      />
+      
       {!gameStarted && !gameOver && (
         <div style={styles.startScreen}>
+          <img 
+            src="./explainer.png" 
+            alt="Game Instructions"
+            style={styles.explainerImage}
+          />
           <img 
             src="./start.png" 
             alt="Start Game" 
