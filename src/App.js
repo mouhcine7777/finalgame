@@ -8,7 +8,13 @@ const styles = {
     overflow: 'hidden',
     backgroundColor: '#1a202c',
     touchAction: 'none',
+    WebkitTouchCallout: 'none',
+    WebkitUserSelect: 'none',
+    KhtmlUserSelect: 'none',
+    MozUserSelect: 'none',
+    msUserSelect: 'none',
     userSelect: 'none',
+    WebkitTapHighlightColor: 'transparent',
   },
   videoBackground: {
     position: 'absolute',
@@ -111,6 +117,12 @@ const styles = {
     cursor: 'ns-resize',
     userSelect: 'none',
     pointerEvents: 'auto',
+    WebkitTouchCallout: 'none',
+    WebkitUserSelect: 'none',
+    KhtmlUserSelect: 'none',
+    MozUserSelect: 'none',
+    msUserSelect: 'none',
+    WebkitTapHighlightColor: 'transparent',
   },
   timer: {
     position: 'absolute',
@@ -172,7 +184,14 @@ const styles = {
     textAlign: 'center',
     textShadow: '0 0 20px rgba(255,255,255,0.5)',
     zIndex: 4,
-    cursor: 'pointer'
+    cursor: 'pointer',
+    WebkitTouchCallout: 'none',
+    WebkitUserSelect: 'none',
+    KhtmlUserSelect: 'none',
+    MozUserSelect: 'none',
+    msUserSelect: 'none',
+    userSelect: 'none',
+    WebkitTapHighlightColor: 'transparent',
   },
   finalScore: {
     position: 'absolute',
@@ -185,6 +204,13 @@ const styles = {
     textAlign: 'center',
     textShadow: '0 0 20px rgba(255,255,255,0.5)',
     zIndex: 4,
+    WebkitTouchCallout: 'none',
+    WebkitUserSelect: 'none',
+    KhtmlUserSelect: 'none',
+    MozUserSelect: 'none',
+    msUserSelect: 'none',
+    userSelect: 'none',
+    WebkitTapHighlightColor: 'transparent',
   }
 };
 
