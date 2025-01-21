@@ -172,11 +172,24 @@ const styles = {
     textAlign: 'center',
     textShadow: '0 0 20px rgba(255,255,255,0.5)',
     zIndex: 4,
+    cursor: 'pointer'
+  },
+  finalScore: {
+    position: 'absolute',
+    top: '47px', // Match the default score position
+    left: '50%',
+    transform: 'translateX(-50%)',
+    color: '#442869',
+    fontSize: '2.4rem',
+    fontWeight: '900',
+    textAlign: 'center',
+    textShadow: '0 0 20px rgba(255,255,255,0.5)',
+    zIndex: 4,
   }
 };
 
 const DIFFICULTY_SETTINGS = {
-  easy: { speed: 3.5, spawnRate: 700, bombChance: 0.2 }, // Increased speed from 2 to 3.5, reduced spawnRate from 800 to 700
+  easy: { speed: 3.5, spawnRate: 700, bombChance: 0.2 },
   medium: { speed: 4, spawnRate: 600, bombChance: 0.35 },
   hard: { speed: 6, spawnRate: 400, bombChance: 0.5 },
   extreme: { speed: 8, spawnRate: 300, bombChance: 0.65 }
@@ -314,7 +327,6 @@ const Game = () => {
     };
   }, [currentPhase, timeLeft]);
 
-  // Update game phase and settings
   useEffect(() => {
     if (!gameStarted || gameOver) return;
 
@@ -494,27 +506,32 @@ const Game = () => {
       />
 
       <div style={styles.scoreContainer}>
-        {gameStarted && !gameOver && (
+        {gameStarted && (
           <>
-            <div 
-              style={{
-                ...styles.score,
-                top: `${scorePosition}px`,
-                cursor: isDragging ? 'grabbing' : 'grab'
-              }}
-              onMouseDown={handleDragStart}
-              onTouchStart={handleDragStart}
-            >
-              {score}
-            </div>
-            <div style={styles.timer}>{timeLeft}s</div>
+            {!gameOver && (
+              <div 
+                style={{
+                  ...styles.score,
+                  top: `${scorePosition}px`,
+                  cursor: isDragging ? 'grabbing' : 'grab'
+                }}
+                onMouseDown={handleDragStart}
+                onTouchStart={handleDragStart}
+              >
+                {score}
+              </div>
+            )}
+            <div style={styles.timer}>{timeLeft || '00'}s</div>
           </>
         )}
 
         {gameOver && (
-          <div style={styles.gameOver} onClick={startGame}>
-            {score}
-          </div>
+          <>
+            <div style={styles.finalScore}>{score}</div>
+            <div style={styles.gameOver} onClick={startGame}>
+              {score}
+            </div>
+          </>
         )}
       </div>
     </div>
